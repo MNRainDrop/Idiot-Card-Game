@@ -1,0 +1,40 @@
+sequenceDiagram
+
+participant hc as Host Client
+participant pc as Participant Client
+participant rc as Room Controller
+participant rm as Room Manager
+participant gm as Game Manager
+
+hc->>rc: Create Room using HTTP
+Note over hc,rc: '{url}/create/{RoomName}'
+rc->>rm: Create room
+rm->>rc: Send room code back to controller
+rc->>rc: Track all created rooms
+rc->>hc: Upgrade Connection from HTTP to websocket
+
+hc-->>hc: Wait for other players<br>to join
+
+pc->>rc: Connect to Server using HTTP
+Note over pc,rc: '{url}/join/{room code}'
+
+rc->>rc: Track all open websocket connections
+rc->>rm: Controller calls manager to put player into room
+rm->>rc: Room manager confirms that player was added
+rc-->>pc: Upgrades connection from HTTP to websocket
+rc->>pc: Broadcast to other participants that player has joined
+rc->>hc: Notify host that player has joined
+
+hc-->>hc: Wait for all players<br>to be ready
+
+pc->>rc: Send signal to change player ready state
+rc->>rm: Controller calls manager to update player's ready state
+rm->>rc: Room Manager confirms that player state was changed
+rc->>pc: Broadcast to other participants that player has updated their ready state
+rc->>hc: Notify host that player has updated their ready state
+
+Note over hc,rc: All players are ready
+
+hc->>rc: Send signal to start game
+rc->>rm: Controller calls manager to start game
+rm->>gm: Room manager creates game
